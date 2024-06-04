@@ -49,11 +49,12 @@ $(() => {
         
         for(let i = 1; i <= plazoMeses; i++){
           let cantidadDias1 = obtenerCantidadDiasMesAño(anyo, mes)
-          let interesesMensuales = (((principal + mantenimientoValor) * tasaInteresMensual * cantidadDias1) / 360).toFixed(2)
+          console.log(principal,mantenimientoValor,tasaInteresAnual,cantidadDias1,(principal + mantenimientoValor),((principal + mantenimientoValor) * tasaInteresAnual),(((principal + mantenimientoValor) * tasaInteresAnual) * cantidadDias1),((((principal + mantenimientoValor) * tasaInteresAnual) * cantidadDias1) / 360))
+          let interesesMensuales = ((((principal + mantenimientoValor) * tasaInteresAnual) * cantidadDias1) / 360).toFixed(2)
           let cuotaMensual = (amortizacion + comisionMensual + mantenimientoValor + Number(interesesMensuales))
 
           principal -= amortizacion
-          console.log(i, new Date(anyo, mes, 1), cantidadDias1, amortizacion, 0, interesesMensuales, comisionMensual, cuotaMensual, principal)
+          
           agregarFila(i, new Date(anyo, mes, 1), cantidadDias1, amortizacion, 0, interesesMensuales, comisionMensual, cuotaMensual, principal) 
         }
 
