@@ -19,11 +19,9 @@ $(() => {
         let tasaComisionAnual = $("#tasa_comision").val() * 0.01 //TODO pendiente de revisar
         let tipoCuota = $("#tipo_cuota").val() //string
 
-        let principal = montoPrestamo
-        let amortizacion = montoPrestamo / plazoMeses
-        let comisionGeneral = tasaComisionAnual * montoPrestamo
-        let comisionMensual = comisionGeneral / plazoMeses
-
+        let principal = Number(montoPrestamo).toFixed(2)
+        
+        
         var fecha = new Date();
         var anyo = fecha.getFullYear();
         let mes = fecha.getMonth()
@@ -46,16 +44,22 @@ $(() => {
             tasaComisionMensual = (tasaComisionAnual / tasaSemanalCantidad).toFixed(2);
             periodoCobro = 7
         }
-        
-        for(let i = 1; i <= plazoMeses; i++){
-          let cantidadDias1 = obtenerCantidadDiasMesAño(anyo, mes)
-          console.log(principal,mantenimientoValor,tasaInteresAnual,cantidadDias1,(principal + mantenimientoValor),((principal + mantenimientoValor) * tasaInteresAnual),(((principal + mantenimientoValor) * tasaInteresAnual) * cantidadDias1),((((principal + mantenimientoValor) * tasaInteresAnual) * cantidadDias1) / 360))
-          let interesesMensuales = ((((principal + mantenimientoValor) * tasaInteresAnual) * cantidadDias1) / 360).toFixed(2)
-          let cuotaMensual = (amortizacion + comisionMensual + mantenimientoValor + Number(interesesMensuales))
 
-          principal -= amortizacion
-          
-          agregarFila(i, new Date(anyo, mes, 1), cantidadDias1, amortizacion, 0, interesesMensuales, comisionMensual, cuotaMensual, principal) 
+        let amortizacion = montoPrestamo / plazoMeses
+        let comisionGeneral = tasaComisionAnual * montoPrestamo
+        let comisionMensual = comisionGeneral / plazoMeses
+        
+        if (tipoCuota === "variable"){
+          for(let i = 1; i <= plazoMeses; i++){
+            let cantidadDias1 = obtenerCantidadDiasMesAño(anyo, mes)
+            
+            let interesesMensuales = ((((principal + mantenimientoValor) * tasaInteresAnual) * periodoCobro) / 360).toFixed(2)
+            let cuotaMensual = (amortizacion + comisionMensual + mantenimientoValor + Number(interesesMensuales))
+  
+            principal -= amortizacion
+            
+            agregarFila(i, new Date(anyo, mes, 1), cantidadDias1, amortizacion, 0, interesesMensuales, comisionMensual, cuotaMensual, principal) 
+          }
         }
 
         
