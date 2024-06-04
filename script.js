@@ -1,86 +1,108 @@
-function calcularCuota() {
-    var monto = parseFloat(document.getElementById('monto').value);
-    var plazo = parseInt(document.getElementById('plazo').value);
-    var periodo_cobro = document.getElementById('periodo_cobro').value;
-    var tasa_interes_anual = parseFloat(document.getElementById('tasa_interes').value) / 100;
-    var tasa_comision = parseFloat(document.getElementById('tasa_comision').value) / 100;
-    var tipo_cuota = document.getElementById('tipo_cuota').value;
-  
-    var tabla = document.getElementById('tabla-cuotas');
-    tabla.innerHTML = '';
-  
-    var totalInteres = 0;
-    var totalComision = 0;
-    var saldo = monto;
-  
-    for (var i = 1; i <= plazo; i++) {
-      var fila = tabla.insertRow();
-      var numeroCuota = fila.insertCell(0);
-      var fechaCuota = fila.insertCell(1);
-      var dias = fila.insertCell(2);
-      var cuotaPrincipal = fila.insertCell(3);
-      var deslizamiento = fila.insertCell(4);
-      var interes = fila.insertCell(5);
-      var comision = fila.insertCell(6);
-      var montoCuota = fila.insertCell(7);
-      var saldoActual = fila.insertCell(8);
-  
-      numeroCuota.innerHTML = i;
-  
-      // Calculamos la fecha de la cuota
-      var fecha = new Date();
-      fecha.setMonth(fecha.getMonth() + i);
-      fechaCuota.innerHTML = fecha.toLocaleDateString();
-  
-      // Dependiendo del periodo de cobro, calculamos los días
-      if (periodo_cobro === 'mensual') {
-        dias.innerHTML = 30;
-      } else if (periodo_cobro === 'quincenal') {
-        dias.innerHTML = 15;
-      } else if (periodo_cobro === 'semanal') {
-        dias.innerHTML = 7;
-      }
-  
-      // Calculamos la parte del interés
-      var interesMensual = tasa_interes_anual / 12;
-      var interesCalculado = saldo * interesMensual;
-      totalInteres += interesCalculado;
-  
-      // Calculamos la parte del principal
-      var cuotaPrincipalCalculado = 0;
-      if (tipo_cuota === 'nivelada') {
-        cuotaPrincipalCalculado = monto / plazo;
-      } else if (tipo_cuota === 'variable') {
-        cuotaPrincipalCalculado = monto * (i / plazo);
-      }
-  
-      // Calculamos la comisión
-      var comisionCalculada = saldo * tasa_comision;
-      totalComision += comisionCalculada;
-  
-      // Calculamos el monto de la cuota
-      var montoCuotaCalculado = cuotaPrincipalCalculado + interesCalculado + comisionCalculada;
-  
-      // Actualizamos el saldo
-      saldo -= cuotaPrincipalCalculado;
-  
-      // Mostramos los resultados en la tabla
-      cuotaPrincipal.innerHTML = cuotaPrincipalCalculado.toFixed(2);
-      deslizamiento.innerHTML = '-';
-      interes.innerHTML = interesCalculado.toFixed(2);
-      comision.innerHTML = comisionCalculada.toFixed(2);
-      montoCuota.innerHTML = montoCuotaCalculado.toFixed(2);
-      saldoActual.innerHTML = saldo.toFixed(2);
+$(() => {
+  const tasaComisionMaxima = 10
+  const tasaQuincenalCantidad = 24
+  const tasaMensualCantidad = 12
+  const tasaSemanalCantidad = 48
+
+
+  $("#calcularCuota").click(() => {
+
+    let montoPrestamo = $("#monto").val()
+    let plazoMeses = $("#plazo").val()
+    var tasaInteresAnual = 0.6; // Tasa de interés anual (60% anual)
+    let periodoCobro = $("#periodo_cobro").val() //string
+    
+    let tasaComisionAnual = $("#tasa_comision").val() //TODO pendiente de revisar
+    let tipoCuota = $("#tipo_cuota").val() //string
+    let tasaInteresMensual = 0
+    let tasaComisionMensual = 0
+    
+
+    $('#tablaCuotas').empty();
+    if(periodoCobro === "mensual"){
+      periodoCobro = 30
+      // Convertir tasas anuales a mensuales
+      tasaInteresMensual = tasaInteresAnual / tasaMensualCantidad;
+      tasaComisionMensual = tasaComisionAnual / tasaMensualCantidad;
     }
+    else if(periodoCobro === "quincenal"){
+      plazoMeses = plazoMeses * 2
+      tasaInteresMensual = tasaInteresAnual / tasaQuincenalCantidad;
+      tasaComisionMensual = tasaComisionAnual / tasaQuincenalCantidad;
+      periodoCobro = 15
+    }else if(periodoCobro === "semanal"){
+        plazoMeses = plazoMeses * 4
+        tasaInteresMensual = tasaInteresAnual / tasaSemanalCantidad;
+        tasaComisionMensual = tasaComisionAnual / tasaSemanalCantidad;
+        periodoCobro = 7
+    }
+
+    console.log(tasaInteresMensual,tasaComisionMensual,plazoMeses,montoPrestamo, periodoCobro)
+      //let montoCuota = calcularMontoCuota(montoPrestamo, tasaInteresMensual, plazoMeses)
+      //let montoPrestamo1 = calcularMontoPrestamo(montoCuota,tasaInteresMensual, plazoMeses)
+      let detalleMontoCuotas = calcularDetallesCuotas(tasaInteresMensual,tasaComisionMensual,plazoMeses,montoPrestamo, periodoCobro)
+      console.log(detalleMontoCuotas)
+
+  })
+
+  function calcularMontoCuota(montoPrestamo, tasaInteresQuincenal, numeroCuotas) {
+    const numerador = montoPrestamo * tasaInteresQuincenal;
+    const denominador = 1 - Math.pow(1 + tasaInteresQuincenal, -numeroCuotas);
+    return numerador / denominador;
+}
+
   
-    // Agregamos una fila al final para mostrar los totales
-    var filaTotal = tabla.insertRow();
-    var celdaTotal = filaTotal.insertCell();
-    celdaTotal.colSpan = 8;
-    celdaTotal.innerHTML = '<b>Total</b>';
-    var celdaTotalInteres = filaTotal.insertCell();
-    celdaTotalInteres.innerHTML = '<b>' + totalInteres.toFixed(2) + '</b>';
-    var celdaTotalComision = filaTotal.insertCell();
-    celdaTotalComision.innerHTML = '<b>' + totalComision.toFixed(2) + '</b>';
-  }
-  
+
+  function calcularDetallesCuotas(tasaInteresQuincenal,tasaComisionQuincenal,numeroCuotas,montoTotalCredito, periodoCobro) {
+    
+    
+
+    const montoCuota = calcularMontoCuota(montoTotalCredito, tasaInteresQuincenal, numeroCuotas);
+
+    let detallesCuotas = [];
+
+    // Calcula los detalles de cada cuota
+    for (let i = 1; i <= numeroCuotas; i++) {
+        const comision = montoCuota * tasaComisionQuincenal;
+        const interes = (montoTotalCredito - comision) * tasaInteresQuincenal;
+        const principal = montoCuota - interes - comision;
+        const deslizamiento = montoCuota - principal - interes - comision;
+        const fechaCuota = new Date(new Date().setDate(new Date().getDate() + (periodoCobro * i)));
+
+        agregarFila(i,fechaCuota,periodoCobro,principal.toFixed(2),deslizamiento.toFixed(2),interes.toFixed(2),comision.toFixed(2),montoCuota.toFixed(2))
+
+        detallesCuotas.push({
+            numeroCuota: i,
+            fechaCuota: fechaCuota.toLocaleDateString('es-ES'),
+            dias: periodoCobro,
+            principal: principal.toFixed(2),
+            deslizamiento: deslizamiento.toFixed(2),
+            interes: interes.toFixed(2),
+            comision: comision.toFixed(2),
+            montoCuota: montoCuota.toFixed(2)
+        });
+    }
+
+    return detallesCuotas;
+}
+
+function agregarFila(noCuota, fecCuota, cantidadDias, cuotaPrincipal, deslizamiento, interes, comisionMensual, montoCuota, saldo) {
+   
+  var htmlTags = '<tr>'+
+       '<td>' + noCuota + '</td>'+
+       '<td>' + fecCuota + '</td>'+
+       '<td>' + cantidadDias + '</td>'+
+       '<td>' + cuotaPrincipal + '</td>'+
+       '<td>' + deslizamiento + '</td>'+
+       '<td>' + interes + '</td>'+
+       '<td>' + comisionMensual + '</td>'+
+       '<td>' + montoCuota + '</td>'+
+       '<td>' + saldo + '</td>'+
+     '</tr>';
+     
+  $('#tablaCuotas').append(htmlTags);
+
+}
+
+
+})
