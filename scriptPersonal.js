@@ -18,16 +18,20 @@ $(() => {
     const tasaMensualCantidad = 12
     const tasaSemanalCantidad = 48
 
-    var totalPrincipal = 0
+    
+
+    let tasaInteresMensual = 0
+    let tasaComisionMensual = 0
+    
+
+    $("#calcularCuota").click(() => {
+
+      var totalPrincipal = 0
     var totalInteres = 0
     var totalDeslizamiento = 0
     var totalComision = 0
     var totalMontoCuotas = 0
-
-    let tasaInteresMensual = 0
-    let tasaComisionMensual = 0
-
-    $("#calcularCuota").click(() => {
+    let fechaAnterior = ''
 
         let montoPrestamo = $("#monto").val()
         let plazoMeses = $("#plazo").val()
@@ -44,12 +48,6 @@ $(() => {
         let fechas = []
 
         
-
-        let fechasQuincenales = obtenerFechasQuincenales(16);
-        console.log("Fechas quincenales:", fechasQuincenales);
-
-        let fechasSemanales = obtenerFechasSemanales(32);
-        console.log("Fechas semanales:", fechasSemanales);
 
         $('#tablaCuotas').empty();
         if(periodoCobro === "mensual"){
@@ -79,16 +77,23 @@ $(() => {
         
         if (tipoCuota === "variable"){
           for(let i = 1; i <= plazoMeses; i++){
-            let cantidadDias1 = obtenerCantidadDiasMesAño(2024, 6)
+            
             
             let interesesMensuales = ((((principal + mantenimientoValor) * tasaInteresAnual) * periodoCobro) / 360).toFixed(2)
             let cuotaMensual = (amortizacion + comisionMensual + mantenimientoValor + Number(interesesMensuales))
   
             principal -= amortizacion
             
-            let fechaTemp = fechas[i-1].getDate()
-            agregarFila(i, fechaTemp, cantidadDias1, amortizacion, 0, interesesMensuales, comisionMensual, cuotaMensual, principal) 
+            
+            let fechaTemp = formatearFecha(fechas[i-1]);
+            
+            fechaAnterior = fechaAnterior == '' ? new Date() : fechaAnterior
+            
+            let diferenciaDias = diferenciaEnDias(fechaAnterior, fechas[i-1])
 
+            agregarFila(i, fechaTemp, diferenciaDias, amortizacion, 0, interesesMensuales, comisionMensual, cuotaMensual, principal) 
+            console.log(fechaAnterior, fechas[i-1], diferenciaDias)
+            fechaAnterior = fechas[i-1]
             
             totalPrincipal += Number(amortizacion)
             totalDeslizamiento += 0
@@ -127,27 +132,40 @@ $(() => {
 function obtenerFechasMensuales(iteraciones) {
   let fechas = [];
   let fechaActual = new Date();
+  let cantidadDiasAgregar = 30
+
+  fechaActual.setDate(fechaActual.getDate() + cantidadDiasAgregar);
+  
   
   for (let i = 0; i < iteraciones; i++) {
       if (fechaActual.getDay() !== 0) { // Evitar fechas que caigan en domingo
           fechas.push(new Date(fechaActual));
+      }else{
+        fechaActual.setDate(fechaActual.getDate() + 1);
+        fechas.push(new Date(fechaActual));
       }
       fechaActual.setMonth(fechaActual.getMonth() + 1);
-  }
+  } 
   
   return fechas;
 }
 
 // Función para obtener una lista de fechas quincenales
 function obtenerFechasQuincenales(iteraciones) {
+  let cantidadDiasAgregar = 15
   let fechas = [];
   let fechaActual = new Date();
+  fechaActual.setDate(fechaActual.getDate() + 15)
   
   for (let i = 0; i < iteraciones; i++) {
       if (fechaActual.getDay() !== 0) { // Evitar fechas que caigan en domingo
           fechas.push(new Date(fechaActual));
+      }else{
+        fechaActual.setDate(fechaActual.getDate() + 1);
+        fechas.push(new Date(fechaActual));
+
       }
-      fechaActual.setDate(fechaActual.getDate() + 14);
+      fechaActual.setDate(fechaActual.getDate() + cantidadDiasAgregar);
   }
   
   return fechas;
@@ -155,34 +173,42 @@ function obtenerFechasQuincenales(iteraciones) {
 
 // Función para obtener una lista de fechas semanales
 function obtenerFechasSemanales(iteraciones) {
+  let cantidadDiasAgregar = 7
   let fechas = [];
   let fechaActual = new Date();
-  
+  fechaActual.setDate(fechaActual.getDate() + 7)
+
   for (let i = 0; i < iteraciones; i++) {
       if (fechaActual.getDay() !== 0) { // Evitar fechas que caigan en domingo
           fechas.push(new Date(fechaActual));
+      }else{
+        fechaActual.setDate(fechaActual.getDate() + 1);
+        fechas.push(new Date(fechaActual));
       }
-      fechaActual.setDate(fechaActual.getDate() + 7);
+      fechaActual.setDate(fechaActual.getDate() + cantidadDiasAgregar);
   }
   
   return fechas;
 }
 
-     function obtenerCantidadDiasMesAño(anyo, mes){
+// Función para formatear la fecha en dd-mm-yyyy
+function formatearFecha(fecha) {
+  const date = new Date(fecha);
+  const dia = date.getDate();
+  const mes = date.getMonth() + 1; // Los meses van de 0 a 11 en JavaScript
+  const año = date.getFullYear();
+  return `${dia < 10 ? '0' + dia : dia}-${mes < 10 ? '0' + mes : mes}-${año}`;
+}
 
-        let diasMes = new Date(anyo, mes, 0).getDate();
-        console.log(diasMes, mes, anyo)
-        let diasSemana = ['Domingo','Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
-        console.log(new Date().getDay())
-        for (var dia = 1; dia <= diasMes; dia++) {
-          // Ojo, hay que restarle 1 para obtener el mes correcto
-          var indice = new Date(anyo, mes - 1, dia).getDay();
-          console.log(`El día número ${dia} del mes ${mes} del año ${anyo} es ${diasSemana[indice]}`);
-        }
+function diferenciaEnDias(fecha1, fecha2) {
+
+ 
+  const unDia = 1000 * 60 * 60 * 24; // Milisegundos en un día
+  const diferenciaMs = Math.abs(fecha1 - fecha2);
+  
+  return Math.round(diferenciaMs / unDia);
+}
+
     
-        return diasMes
-      }
-
-      
 
 })
