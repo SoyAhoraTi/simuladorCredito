@@ -79,10 +79,10 @@ $(() => {
           for(let i = 1; i <= plazoMeses; i++){
             
             
-            let interesesMensuales = ((((principal + mantenimientoValor) * tasaInteresAnual) * periodoCobro) / 360).toFixed(2)
-            let cuotaMensual = (amortizacion + comisionMensual + mantenimientoValor + Number(interesesMensuales))
+            let interesesMensuales = Number((((Number(principal) + mantenimientoValor) * Number(tasaInteresAnual)) * Number(periodoCobro)) / 360)
+            let cuotaMensual = Number(amortizacion) + Number(comisionMensual) + mantenimientoValor + Number(interesesMensuales)
   
-            principal -= amortizacion
+            principal -= Number(amortizacion)
             
             
             let fechaTemp = formatearFecha(fechas[i-1]);
@@ -90,9 +90,9 @@ $(() => {
             fechaAnterior = fechaAnterior == '' ? new Date() : fechaAnterior
             
             let diferenciaDias = diferenciaEnDias(fechaAnterior, fechas[i-1])
-
+            
             agregarFila(i, fechaTemp, diferenciaDias, amortizacion, 0, interesesMensuales, comisionMensual, cuotaMensual, principal) 
-            console.log(fechaAnterior, fechas[i-1], diferenciaDias)
+            
             fechaAnterior = fechas[i-1]
             
             totalPrincipal += Number(amortizacion)
@@ -101,12 +101,45 @@ $(() => {
             totalComision += Number(comisionMensual)
             totalMontoCuotas += Number(cuotaMensual)
           }
+        }else{
+
+          let interesMensualFijo = 5 //equivale al porcentaje
+          let cuotaMensual = calcularCuotaFija(montoPrestamo,interesMensualFijo,plazoMeses)
+          principal = Number(montoPrestamo)
+
+          for(let i = 1; i <= plazoMeses; i++){
+            
+            let cuotaInteres = Number(principal * (interesMensualFijo / 100))
+            
+            let fechaTemp = formatearFecha(fechas[i-1]);
+            
+            fechaAnterior = fechaAnterior == '' ? new Date() : fechaAnterior
+            
+            let diferenciaDias = diferenciaEnDias(fechaAnterior, fechas[i-1])
+
+
+
+            amortizacion = Number(Number(cuotaMensual) - Number(cuotaInteres))
+            principal = Number(Number(principal) - Number(amortizacion))
+           
+        
+            agregarFila(i, fechaTemp, diferenciaDias, amortizacion, 0, cuotaInteres, 0, cuotaMensual, principal)
+            fechaAnterior = fechas[i-1] 
+
+            totalPrincipal += Number(amortizacion)
+            
+            totalInteres += Number(cuotaInteres)
+            totalComision += 0
+            totalMontoCuotas += Number(cuotaMensual)
+
+            
+          }
         }
 
         
         
         //agregar totales de todos los campos
-        agregarFila("TOTALES", "", "", Number(totalPrincipal).toFixed(2), totalDeslizamiento, Number(totalInteres).toFixed(2), Number(totalComision).toFixed(2), Number(totalMontoCuotas).toFixed(2), "") 
+        agregarFila("TOTALES", "", "", Number(totalPrincipal), totalDeslizamiento, Number(totalInteres), Number(totalComision), Number(totalMontoCuotas), "") 
 
     })
 
@@ -115,13 +148,13 @@ $(() => {
         var htmlTags = '<tr>'+
              '<td>' + noCuota + '</td>'+
              '<td>' + fecCuota + '</td>'+
-             '<td>' + cantidadDias + '</td>'+
-             '<td>' + cuotaPrincipal + '</td>'+
-             '<td>' + deslizamiento + '</td>'+
-             '<td>' + interes + '</td>'+
-             '<td>' + comisionMensual + '</td>'+
-             '<td>' + montoCuota + '</td>'+
-             '<td>' + saldo + '</td>'+
+             '<td>' + Number(cantidadDias) + '</td>'+
+             '<td>' + Number(cuotaPrincipal).toFixed(2) + '</td>'+
+             '<td>' + Number(deslizamiento).toFixed(2) + '</td>'+
+             '<td>' + Number(interes).toFixed(2) + '</td>'+
+             '<td>' + Number(comisionMensual).toFixed(2) + '</td>'+
+             '<td>' + Number(montoCuota).toFixed(2) + '</td>'+
+             '<td>' + Math.abs(Number(saldo).toFixed(2)) + '</td>'+
            '</tr>';
            
         $('#tablaCuotas').append(htmlTags);
@@ -208,6 +241,20 @@ function diferenciaEnDias(fecha1, fecha2) {
   
   return Math.round(diferenciaMs / unDia);
 }
+
+function calcularCuotaFija(montoPrestamo, tasaInteresMensual, plazoPago) {
+  // Convertir la tasa de interés a decimal
+  var tasaDecimal = tasaInteresMensual / 100;
+
+  // Calcular la cuota fija
+  var cuotaFija = montoPrestamo * (tasaDecimal * Math.pow((1 + tasaDecimal), plazoPago)) / (Math.pow((1 + tasaDecimal), plazoPago) - 1);
+
+  // Redondear el resultado a dos decimales
+  cuotaFija = cuotaFija.toFixed(2);
+
+  return cuotaFija;
+}
+
 
     
 
