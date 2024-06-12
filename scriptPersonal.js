@@ -3,7 +3,7 @@ $(() => {
   const tasaComisionMaxima = 10
   const tasaComisionMinima = 3
 
-  $(".plazo").keyup(function(){
+  $(".plazo").on('input',function(){
     
     let valor = $(this).val()
     console.log(Number(valor))
@@ -14,7 +14,7 @@ $(() => {
     else if(valor >= 10 && valor <= 12){
       $("#tasa_comision").val(tasaComisionMaxima)
     }else if(valor > 12 || valor < 1){
-      $(this).val(1)
+      $(this).val('')
       alert("El plazo debe de estar establecido entre 1 mes y 12 meses como maximo.")
     }else{
       $("#tasa_comision").val(valor)
@@ -196,7 +196,7 @@ function obtenerFechasQuincenales(iteraciones, fecha) {
   let cantidadDiasAgregar = 15
   let fechas = [];
   let fechaActual = fecha;
-  fechaActual.setDate(fechaActual.getDate() + 15)
+  
   
   for (let i = 0; i < iteraciones; i++) {
       if (fechaActual.getDay() !== 0) { // Evitar fechas que caigan en domingo
@@ -217,7 +217,7 @@ function obtenerFechasSemanales(iteraciones, fecha) {
   let cantidadDiasAgregar = 7
   let fechas = [];
   let fechaActual = fecha;
-  fechaActual.setDate(fechaActual.getDate() + 7)
+  
 
   for (let i = 0; i < iteraciones; i++) {
       if (fechaActual.getDay() !== 0) { // Evitar fechas que caigan en domingo

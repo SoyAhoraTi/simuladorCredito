@@ -55,4 +55,8 @@ body {
   input:valid + span::after {
     content: " ✓";
   }
+
+  .table thead, .table td{
+    text-wrap: nowrap;
+  }
   
