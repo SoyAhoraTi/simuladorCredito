@@ -1,13 +1,21 @@
 $(() => {
 
   const tasaComisionMaxima = 10
+  const tasaComisionMinima = 3
 
   $(".plazo").keyup(function(){
     
     let valor = $(this).val()
+    console.log(Number(valor))
 
-    if(valor >= 10){
+    if(valor <= 3 && valor >= 1){
+      $("#tasa_comision").val(tasaComisionMinima)
+    }
+    else if(valor >= 10 && valor <= 12){
       $("#tasa_comision").val(tasaComisionMaxima)
+    }else if(valor > 12 || valor < 1){
+      $(this).val(1)
+      alert("El plazo debe de estar establecido entre 1 mes y 12 meses como maximo.")
     }else{
       $("#tasa_comision").val(valor)
     }
@@ -27,11 +35,12 @@ $(() => {
     $("#calcularCuota").click(() => {
 
       var totalPrincipal = 0
+      var totalDias = 0
     var totalInteres = 0
     var totalDeslizamiento = 0
     var totalComision = 0
     var totalMontoCuotas = 0
-    let fechaAnterior = ''
+    
 
         let montoPrestamo = $("#monto").val()
         let plazoMeses = $("#plazo").val()
@@ -43,11 +52,13 @@ $(() => {
         let tipoCuota = $("#tipo_cuota").val() //string
 
         let principal = Number(montoPrestamo).toFixed(2)
+
+       
+        let seleccionFecha = $("#fechaPrimerCuota").val().split('-')
+        let fechaAnterior = seleccionFecha.length != 3 ? new Date() : new Date(seleccionFecha[0],seleccionFecha[1] -1,seleccionFecha[2],0,0,0)
         
         
         let fechas = []
-
-        
 
         $('#tablaCuotas').empty();
         if(periodoCobro === "mensual"){
@@ -55,41 +66,39 @@ $(() => {
           // Convertir tasas anuales a mensuales
           tasaInteresMensual = (tasaInteresAnual / tasaMensualCantidad).toFixed(2);
           tasaComisionMensual = (tasaComisionAnual / tasaMensualCantidad).toFixed(2);
-          fechas = obtenerFechasMensuales(plazoMeses);
+          fechas = obtenerFechasMensuales(plazoMeses,fechaAnterior);
         }
         else if(periodoCobro === "quincenal"){
           plazoMeses = plazoMeses * 2
           tasaInteresMensual = (tasaInteresAnual / tasaQuincenalCantidad).toFixed(2);
           tasaComisionMensual = (tasaComisionAnual / tasaQuincenalCantidad).toFixed(2);
           periodoCobro = 15
-          fechas = obtenerFechasQuincenales(plazoMeses);
+          fechas = obtenerFechasQuincenales(plazoMeses,fechaAnterior);
         }else if(periodoCobro === "semanal"){
             plazoMeses = plazoMeses * 4
             tasaInteresMensual = (tasaInteresAnual / tasaSemanalCantidad).toFixed(2);
             tasaComisionMensual = (tasaComisionAnual / tasaSemanalCantidad).toFixed(2);
             periodoCobro = 7
-            fechas = obtenerFechasSemanales(plazoMeses);
+            fechas = obtenerFechasSemanales(plazoMeses,fechaAnterior);
         }
 
         let amortizacion = montoPrestamo / plazoMeses
         let comisionGeneral = tasaComisionAnual * montoPrestamo
         let comisionMensual = comisionGeneral / plazoMeses
         
+        
         if (tipoCuota === "variable"){
           for(let i = 1; i <= plazoMeses; i++){
             
+            //fechas y obtener la cantidades de dias entre cada fecha
+            let fechaTemp = formatearFecha(fechas[i-1]);
+            let diferenciaDias = diferenciaEnDias(i==1 ? new Date() : fechaAnterior, fechas[i-1])
             
-            let interesesMensuales = Number((((Number(principal) + mantenimientoValor) * Number(tasaInteresAnual)) * Number(periodoCobro)) / 360)
+            //principal * tasa de interes anual * cantidad de dias de la cuota / 36000
+            let interesesMensuales =  Number(Number(principal) * Number(60) * diferenciaDias) / Number(36000)
             let cuotaMensual = Number(amortizacion) + Number(comisionMensual) + mantenimientoValor + Number(interesesMensuales)
-  
             principal -= Number(amortizacion)
             
-            
-            let fechaTemp = formatearFecha(fechas[i-1]);
-            
-            fechaAnterior = fechaAnterior == '' ? new Date() : fechaAnterior
-            
-            let diferenciaDias = diferenciaEnDias(fechaAnterior, fechas[i-1])
             
             agregarFila(i, fechaTemp, diferenciaDias, amortizacion, 0, interesesMensuales, comisionMensual, cuotaMensual, principal) 
             
@@ -100,6 +109,8 @@ $(() => {
             totalInteres += Number(interesesMensuales)
             totalComision += Number(comisionMensual)
             totalMontoCuotas += Number(cuotaMensual)
+
+            totalDias += Number(diferenciaDias)
           }
         }else{
 
@@ -113,7 +124,7 @@ $(() => {
             
             let fechaTemp = formatearFecha(fechas[i-1]);
             
-            fechaAnterior = fechaAnterior == '' ? new Date() : fechaAnterior
+           
             
             let diferenciaDias = diferenciaEnDias(fechaAnterior, fechas[i-1])
 
@@ -131,7 +142,7 @@ $(() => {
             totalInteres += Number(cuotaInteres)
             totalComision += 0
             totalMontoCuotas += Number(cuotaMensual)
-
+            totalDias += Number(diferenciaDias)
             
           }
         }
@@ -139,7 +150,7 @@ $(() => {
         
         
         //agregar totales de todos los campos
-        agregarFila("TOTALES", "", "", Number(totalPrincipal), totalDeslizamiento, Number(totalInteres), Number(totalComision), Number(totalMontoCuotas), "") 
+        agregarFila("TOTALES", "", Number(totalDias).toFixed(2), Number(totalPrincipal), totalDeslizamiento, Number(totalInteres), Number(totalComision), Number(totalMontoCuotas), "") 
 
     })
 
@@ -162,20 +173,17 @@ $(() => {
      }
 
      // Función para obtener una lista de fechas mensuales
-function obtenerFechasMensuales(iteraciones) {
+function obtenerFechasMensuales(iteraciones, fecha) {
   let fechas = [];
-  let fechaActual = new Date();
-  let cantidadDiasAgregar = 30
+  let fechaActual = fecha;
 
-  fechaActual.setDate(fechaActual.getDate() + cantidadDiasAgregar);
-  
-  
+
   for (let i = 0; i < iteraciones; i++) {
       if (fechaActual.getDay() !== 0) { // Evitar fechas que caigan en domingo
           fechas.push(new Date(fechaActual));
       }else{
-        fechaActual.setDate(fechaActual.getDate() + 1);
-        fechas.push(new Date(fechaActual));
+        //en caso que caiga domingo agregarle un dia para que caiga lunes el pago
+        fechas.push(new Date(fechaActual.setDate(fechaActual.getDate() + 1)));
       }
       fechaActual.setMonth(fechaActual.getMonth() + 1);
   } 
@@ -184,10 +192,10 @@ function obtenerFechasMensuales(iteraciones) {
 }
 
 // Función para obtener una lista de fechas quincenales
-function obtenerFechasQuincenales(iteraciones) {
+function obtenerFechasQuincenales(iteraciones, fecha) {
   let cantidadDiasAgregar = 15
   let fechas = [];
-  let fechaActual = new Date();
+  let fechaActual = fecha;
   fechaActual.setDate(fechaActual.getDate() + 15)
   
   for (let i = 0; i < iteraciones; i++) {
@@ -205,10 +213,10 @@ function obtenerFechasQuincenales(iteraciones) {
 }
 
 // Función para obtener una lista de fechas semanales
-function obtenerFechasSemanales(iteraciones) {
+function obtenerFechasSemanales(iteraciones, fecha) {
   let cantidadDiasAgregar = 7
   let fechas = [];
-  let fechaActual = new Date();
+  let fechaActual = fecha;
   fechaActual.setDate(fechaActual.getDate() + 7)
 
   for (let i = 0; i < iteraciones; i++) {
@@ -234,12 +242,11 @@ function formatearFecha(fecha) {
 }
 
 function diferenciaEnDias(fecha1, fecha2) {
-
- 
-  const unDia = 1000 * 60 * 60 * 24; // Milisegundos en un día
-  const diferenciaMs = Math.abs(fecha1 - fecha2);
   
-  return Math.round(diferenciaMs / unDia);
+
+  const unDia = 1000 * 60 * 60 * 24; // Milisegundos en un día
+  const diferenciaMs = Math.abs(fecha1.getTime() - fecha2.getTime());
+  return Math.ceil(diferenciaMs / unDia);
 }
 
 function calcularCuotaFija(montoPrestamo, tasaInteresMensual, plazoPago) {
